@@ -1,0 +1,479 @@
+CREATE DATABASE FINANCE_BANKING_DB;
+
+CREATE SCHEMA FINANCE_BANKING_DB.BANKING_ANALYTICS;
+
+USE DATABASE FINANCE_BANKING_DB;
+USE SCHEMA BANKING_ANALYTICS;
+
+#DIMENTION TABLE (DATE)
+
+CREATE TABLE DIM_DATE (
+    DATE_KEY NUMBER PRIMARY KEY,
+    FULL_DATE DATE NOT NULL,
+    DAY NUMBER,
+    MONTH NUMBER,
+    MONTH_NAME VARCHAR(20),
+    QUARTER NUMBER,
+    YEAR NUMBER,
+    WEEK NUMBER,
+    DAY_NAME VARCHAR(20),
+    IS_WEEKEND BOOLEAN
+);
+INSERT INTO DIM_DATE
+SELECT
+    TO_NUMBER(TO_CHAR(DATE_VALUE, 'YYYYMMDD')) AS DATE_KEY,
+    DATE_VALUE AS FULL_DATE,
+    DAY(DATE_VALUE) AS DAY,
+    MONTH(DATE_VALUE) AS MONTH,
+    TO_CHAR(DATE_VALUE, 'MMMM') AS MONTH_NAME,
+    QUARTER(DATE_VALUE) AS QUARTER,
+    YEAR(DATE_VALUE) AS YEAR,
+    WEEK(DATE_VALUE) AS WEEK,
+    TRIM(TO_CHAR(DATE_VALUE, 'Day')) AS DAY_NAME,
+    DAYOFWEEK(DATE_VALUE) IN (1,7) AS IS_WEEKEND
+FROM (
+    SELECT DATEADD(
+        DAY,
+        SEQ4(),
+        '2025-01-01'::DATE
+        '2024-01-01':DATE
+    ) AS DATE_VALUE
+    FROM TABLE(GENERATOR(ROWCOUNT => 365))
+);
+SELECT COUNT(*) FROM DIM_DATE;
+
+#DIM_BRANCH
+
+CREATE OR REPLACE TABLE DIM_BRANCH (
+    BRANCH_KEY NUMBER PRIMARY KEY,
+    BRANCH_ID VARCHAR(20),
+    BRANCH_NAME VARCHAR(100),
+    CITY VARCHAR(50),
+    STATE VARCHAR(50),
+    REGION VARCHAR(30),
+    BRANCH_TYPE VARCHAR(30)
+);
+INSERT INTO DIM_BRANCH VALUES
+(1,  'BR001', 'Chennai Main Branch', 'Chennai', 'Tamil Nadu', 'South', 'Metro'),
+(2,  'BR002', 'Chennai Anna Nagar', 'Chennai', 'Tamil Nadu', 'South', 'Urban'),
+(3,  'BR003', 'Coimbatore Branch', 'Coimbatore', 'Tamil Nadu', 'South', 'Urban'),
+(4,  'BR004', 'Bangalore Central', 'Bangalore', 'Karnataka', 'South', 'Metro'),
+(5,  'BR005', 'Mysore Branch', 'Mysore', 'Karnataka', 'South', 'Urban'),
+(6,  'BR006', 'Hyderabad Main', 'Hyderabad', 'Telangana', 'South', 'Metro'),
+(7,  'BR007', 'Mumbai Central', 'Mumbai', 'Maharashtra', 'West', 'Metro'),
+(8,  'BR008', 'Pune Branch', 'Pune', 'Maharashtra', 'West', 'Urban'),
+(9,  'BR009', 'Delhi Main Branch', 'Delhi', 'Delhi', 'North', 'Metro'),
+(10, 'BR010', 'Gurgaon Branch', 'Gurgaon', 'Haryana', 'North', 'Urban'),
+(11, 'BR011', 'Kolkata Central', 'Kolkata', 'West Bengal', 'East', 'Metro'),
+(12, 'BR012', 'Ahmedabad Branch', 'Ahmedabad', 'Gujarat', 'West', 'Urban'),
+(13, 'BR013', 'Jaipur Branch', 'Jaipur', 'Rajasthan', 'North', 'Urban'),
+(14, 'BR014', 'Kochi Branch', 'Kochi', 'Kerala', 'South', 'Urban'),
+(15, 'BR015', 'Lucknow Branch', 'Lucknow', 'Uttar Pradesh', 'North', 'Urban'),
+(16, 'BR016', 'Noida Branch', 'Noida', 'Uttar Pradesh', 'North', 'Urban'),
+(17, 'BR017', 'Indore Branch', 'Indore', 'Madhya Pradesh', 'West', 'Urban'),
+(18, 'BR018', 'Bhubaneswar Branch', 'Bhubaneswar', 'Odisha', 'East', 'Urban'),
+(19, 'BR019', 'Patna Branch', 'Patna', 'Bihar', 'East', 'Urban'),
+(20, 'BR020', 'Visakhapatnam Branch', 'Visakhapatnam', 'Andhra Pradesh', 'South', 'Urban');
+
+#DIM_CUSTOMER
+
+CREATE TABLE DIM_CUSTOMER (
+    CUSTOMER_KEY NUMBER PRIMARY KEY,
+    CUSTOMER_ID VARCHAR(20),
+    CUSTOMER_NAME VARCHAR(100),
+    GENDER VARCHAR(10),
+    AGE NUMBER,
+    CUSTOMER_SEGMENT VARCHAR(30),
+    OCCUPATION VARCHAR(50),
+    CITY VARCHAR(50),
+    STATE VARCHAR(50),
+    ANNUAL_INCOME NUMBER(15,2),
+    CUSTOMER_SINCE DATE
+);
+INSERT INTO DIM_CUSTOMER
+SELECT
+    SEQ4() + 1 AS CUSTOMER_KEY,
+
+    'CUST' || LPAD((SEQ4() + 1)::VARCHAR, 5, '0') AS CUSTOMER_ID,
+
+    'Customer ' || (SEQ4() + 1) AS CUSTOMER_NAME,
+
+    CASE MOD(SEQ4(),3)
+        WHEN 0 THEN 'Male'
+        WHEN 1 THEN 'Female'
+        ELSE 'Other'
+    END AS GENDER,
+
+    UNIFORM(21,65,RANDOM()) AS AGE,
+
+    CASE
+        WHEN UNIFORM(1,100,RANDOM()) <= 50
+            THEN 'Mass Market'
+        WHEN UNIFORM(1,100,RANDOM()) <= 80
+            THEN 'Mass Affluent'
+        WHEN UNIFORM(1,100,RANDOM()) <= 95
+            THEN 'Affluent'
+        ELSE 'High Net Worth'
+    END AS CUSTOMER_SEGMENT,
+
+    CASE MOD(SEQ4(),8)
+        WHEN 0 THEN 'Software Engineer'
+        WHEN 1 THEN 'Teacher'
+        WHEN 2 THEN 'Business Owner'
+        WHEN 3 THEN 'Doctor'
+        WHEN 4 THEN 'Analyst'
+        WHEN 5 THEN 'Manager'
+        WHEN 6 THEN 'Consultant'
+        ELSE 'Entrepreneur'
+    END AS OCCUPATION,
+
+    CASE MOD(SEQ4(),10)
+        WHEN 0 THEN 'Chennai'
+        WHEN 1 THEN 'Bangalore'
+        WHEN 2 THEN 'Hyderabad'
+        WHEN 3 THEN 'Mumbai'
+        WHEN 4 THEN 'Delhi'
+        WHEN 5 THEN 'Pune'
+        WHEN 6 THEN 'Coimbatore'
+        WHEN 7 THEN 'Kolkata'
+        WHEN 8 THEN 'Ahmedabad'
+        ELSE 'Jaipur'
+    END AS CITY,
+
+    CASE MOD(SEQ4(),10)
+        WHEN 0 THEN 'Tamil Nadu'
+        WHEN 1 THEN 'Karnataka'
+        WHEN 2 THEN 'Telangana'
+        WHEN 3 THEN 'Maharashtra'
+        WHEN 4 THEN 'Delhi'
+        WHEN 5 THEN 'Maharashtra'
+        WHEN 6 THEN 'Tamil Nadu'
+        WHEN 7 THEN 'West Bengal'
+        WHEN 8 THEN 'Gujarat'
+        ELSE 'Rajasthan'
+    END AS STATE,
+
+    ROUND(
+        UNIFORM(300000,3000000,RANDOM()),
+        2
+    ) AS ANNUAL_INCOME,
+
+    DATEADD(
+        DAY,
+        -UNIFORM(30,2500,RANDOM()),
+        CURRENT_DATE()
+    ) AS CUSTOMER_SINCE
+
+FROM TABLE(GENERATOR(ROWCOUNT => 1000));
+
+#DIM_ACCOUNT
+
+CREATE OR REPLACE TABLE DIM_ACCOUNT (
+    ACCOUNT_KEY NUMBER PRIMARY KEY,
+    ACCOUNT_ID VARCHAR(20),
+    CUSTOMER_KEY NUMBER,
+    ACCOUNT_TYPE VARCHAR(30),
+    ACCOUNT_STATUS VARCHAR(20),
+    OPEN_DATE DATE,
+    INITIAL_BALANCE NUMBER(15,2)
+);
+INSERT INTO DIM_ACCOUNT
+SELECT
+    SEQ4() + 1 AS ACCOUNT_KEY,
+
+    'ACC' || LPAD((SEQ4() + 1)::VARCHAR, 5, '0') AS ACCOUNT_ID,
+
+    SEQ4() + 1 AS CUSTOMER_KEY,
+
+    CASE MOD(SEQ4(),4)
+        WHEN 0 THEN 'Savings'
+        WHEN 1 THEN 'Current'
+        WHEN 2 THEN 'Salary'
+        ELSE 'Premium'
+    END AS ACCOUNT_TYPE,
+
+    CASE
+        WHEN MOD(SEQ4(),20) = 0 THEN 'Dormant'
+        WHEN MOD(SEQ4(),50) = 0 THEN 'Closed'
+        ELSE 'Active'
+    END AS ACCOUNT_STATUS,
+
+    DATEADD(
+        DAY,
+        -UNIFORM(30,2000,RANDOM()),
+        '2025-01-01'::DATE
+    ) AS OPEN_DATE,
+
+    ROUND(
+        UNIFORM(10000,1000000,RANDOM()),
+        2
+    ) AS INITIAL_BALANCE
+
+FROM TABLE(GENERATOR(ROWCOUNT => 1000));
+
+#DIM_LOAN
+
+CREATE OR REPLACE TABLE DIM_LOAN (
+    LOAN_KEY NUMBER PRIMARY KEY,
+    LOAN_ID VARCHAR(20),
+    CUSTOMER_KEY NUMBER,
+    LOAN_TYPE VARCHAR(30),
+    LOAN_STATUS VARCHAR(20),
+    LOAN_AMOUNT NUMBER(15,2),
+    INTEREST_RATE NUMBER(5,2),
+    LOAN_START_DATE DATE,
+    LOAN_TERM_MONTHS NUMBER,
+    OUTSTANDING_AMOUNT NUMBER(15,2)
+);
+
+INSERT INTO DIM_LOAN
+SELECT
+    SEQ4() + 1 AS LOAN_KEY,
+
+    'LN' || LPAD((SEQ4() + 1)::VARCHAR, 5, '0') AS LOAN_ID,
+
+    UNIFORM(1,1000,RANDOM()) AS CUSTOMER_KEY,
+
+    CASE MOD(SEQ4(),5)
+        WHEN 0 THEN 'Home Loan'
+        WHEN 1 THEN 'Personal Loan'
+        WHEN 2 THEN 'Business Loan'
+        WHEN 3 THEN 'Vehicle Loan'
+        ELSE 'Education Loan'
+    END AS LOAN_TYPE,
+
+    CASE
+        WHEN UNIFORM(1,100,RANDOM()) <= 80 THEN 'Active'
+        WHEN UNIFORM(1,100,RANDOM()) <= 95 THEN 'Closed'
+        ELSE 'Default'
+    END AS LOAN_STATUS,
+
+    ROUND(
+        UNIFORM(100000,10000000,RANDOM()),
+        2
+    ) AS LOAN_AMOUNT,
+
+    ROUND(
+        UNIFORM(700,1500,RANDOM()) / 100,
+        2
+    ) AS INTEREST_RATE,
+
+    DATEADD(
+        DAY,
+        -UNIFORM(30,1500,RANDOM()),
+        '2025-01-01'::DATE
+    ) AS LOAN_START_DATE,
+
+    CASE MOD(SEQ4(),4)
+        WHEN 0 THEN 60
+        WHEN 1 THEN 84
+        WHEN 2 THEN 120
+        ELSE 240
+    END AS LOAN_TERM_MONTHS,
+
+    ROUND(
+        UNIFORM(50000,8000000,RANDOM()),
+        2
+    ) AS OUTSTANDING_AMOUNT
+
+FROM TABLE(GENERATOR(ROWCOUNT => 300));
+
+#DIM_TRANSACTION
+CREATE OR REPLACE TABLE DIM_TRANSACTION (
+    TRANSACTION_TYPE_KEY NUMBER PRIMARY KEY,
+    TRANSACTION_TYPE VARCHAR(50),
+    TRANSACTION_CATEGORY VARCHAR(50),
+    TRANSACTION_DIRECTION VARCHAR(20),
+    REVENUE_FLAG BOOLEAN,
+    EXPENSE_FLAG BOOLEAN
+);
+
+INSERT INTO DIM_TRANSACTION VALUES
+(1, 'Deposit',             'Deposit',    'Credit', TRUE,  FALSE),
+(2, 'Withdrawal',          'Withdrawal', 'Debit',  FALSE, FALSE),
+(3, 'Loan Payment',        'Loan',       'Credit', TRUE,  FALSE),
+(4, 'Interest Income',    'Interest',   'Credit', TRUE,  FALSE),
+(5, 'Service Fee',         'Fee',        'Credit', TRUE,  FALSE),
+(6, 'ATM Fee',             'Fee',        'Credit', TRUE,  FALSE),
+(7, 'Operating Expense',   'Expense',    'Debit',  FALSE, TRUE),
+(8, 'Loan Disbursement',  'Loan',       'Debit',  FALSE, FALSE),
+(9, 'Transfer',            'Transfer',   'Debit',  FALSE, FALSE),
+(10,'Salary Credit',       'Income',     'Credit', TRUE,  FALSE);
+
+#FACT_FINANCIAL_TRANSACTION
+
+CREATE OR REPLACE TABLE FACT_FINANCIAL_TRANSACTION (
+    TRANSACTION_KEY NUMBER PRIMARY KEY,
+    DATE_KEY NUMBER,
+    CUSTOMER_KEY NUMBER,
+    ACCOUNT_KEY NUMBER,
+    BRANCH_KEY NUMBER,
+    LOAN_KEY NUMBER,
+    TRANSACTION_TYPE_KEY NUMBER,
+    TRANSACTION_ID VARCHAR(30),
+    TRANSACTION_AMOUNT NUMBER(15,2),
+    REVENUE_AMOUNT NUMBER(15,2),
+    EXPENSE_AMOUNT NUMBER(15,2),
+    BALANCE_AFTER_TRANSACTION NUMBER(15,2)
+);
+INSERT INTO FACT_FINANCIAL_TRANSACTION
+WITH TRANSACTION_BASE AS
+(
+    SELECT
+        SEQ4() + 1 AS TRANSACTION_KEY,
+
+        UNIFORM(1,365,RANDOM()) AS DATE_NUMBER,
+
+        UNIFORM(1,1000,RANDOM()) AS CUSTOMER_KEY,
+
+        UNIFORM(1,20,RANDOM()) AS BRANCH_KEY,
+
+        CASE
+            WHEN UNIFORM(1,100,RANDOM()) <= 25
+            THEN UNIFORM(1,300,RANDOM())
+            ELSE NULL
+        END AS LOAN_KEY,
+
+        CASE
+            WHEN UNIFORM(1,100,RANDOM()) <= 30 THEN 1
+            WHEN UNIFORM(1,100,RANDOM()) <= 50 THEN 2
+            WHEN UNIFORM(1,100,RANDOM()) <= 65 THEN 3
+            WHEN UNIFORM(1,100,RANDOM()) <= 75 THEN 4
+            WHEN UNIFORM(1,100,RANDOM()) <= 82 THEN 5
+            WHEN UNIFORM(1,100,RANDOM()) <= 87 THEN 6
+            WHEN UNIFORM(1,100,RANDOM()) <= 91 THEN 7
+            WHEN UNIFORM(1,100,RANDOM()) <= 94 THEN 8
+            WHEN UNIFORM(1,100,RANDOM()) <= 97 THEN 9
+            ELSE 10
+        END AS TRANSACTION_TYPE_KEY,
+
+        ROUND(
+            UNIFORM(50000,50000000,RANDOM()) / 100,
+            2
+        ) AS TRANSACTION_AMOUNT
+
+    FROM TABLE(GENERATOR(ROWCOUNT => 10000))
+)
+
+SELECT
+    TRANSACTION_KEY,
+
+    TO_NUMBER(
+        TO_CHAR(
+            DATEADD(
+                DAY,
+                DATE_NUMBER - 1,
+                '2025-01-01'::DATE
+            ),
+            'YYYYMMDD'
+        )
+    ) AS DATE_KEY,
+
+    CUSTOMER_KEY,
+
+    CUSTOMER_KEY AS ACCOUNT_KEY,
+
+    BRANCH_KEY,
+
+    LOAN_KEY,
+
+    TRANSACTION_TYPE_KEY,
+
+    'TXN' ||
+    LPAD(TRANSACTION_KEY::VARCHAR,8,'0')
+    AS TRANSACTION_ID,
+
+    TRANSACTION_AMOUNT,
+
+    CASE
+        WHEN TRANSACTION_TYPE_KEY IN (1,3,4,5,6,10)
+        THEN TRANSACTION_AMOUNT
+        ELSE 0
+    END AS REVENUE_AMOUNT,
+
+    CASE
+        WHEN TRANSACTION_TYPE_KEY = 7
+        THEN TRANSACTION_AMOUNT
+        ELSE 0
+    END AS EXPENSE_AMOUNT,
+
+    ROUND(
+        UNIFORM(5000,5000000,RANDOM()),
+        2
+    ) AS BALANCE_AFTER_TRANSACTION
+
+FROM TRANSACTION_BASE;
+
+## CHECK business data
+
+1,Revenue, expense and profit
+SELECT
+    SUM(REVENUE_AMOUNT) AS TOTAL_REVENUE,
+    SUM(EXPENSE_AMOUNT) AS TOTAL_EXPENSE,
+    SUM(REVENUE_AMOUNT) - SUM(EXPENSE_AMOUNT) AS NET_PROFIT
+FROM FACT_FINANCIAL_TRANSACTION;
+
+2,Monthly performance
+
+SELECT
+    D.YEAR,
+    D.MONTH,
+    D.MONTH_NAME,
+    SUM(F.REVENUE_AMOUNT) AS REVENUE,
+    SUM(F.EXPENSE_AMOUNT) AS EXPENSE,
+    SUM(F.REVENUE_AMOUNT) - SUM(F.EXPENSE_AMOUNT) AS PROFIT
+FROM FACT_FINANCIAL_TRANSACTION F
+JOIN DIM_DATE D
+    ON F.DATE_KEY = D.DATE_KEY
+GROUP BY
+    D.YEAR,
+    D.MONTH,
+    D.MONTH_NAME
+ORDER BY
+    D.YEAR,
+    D.MONTH;
+
+3,Branch performance
+
+SELECT
+    B.BRANCH_NAME,
+    B.CITY,
+    B.REGION,
+    COUNT(F.TRANSACTION_KEY) AS TRANSACTIONS,
+    SUM(F.REVENUE_AMOUNT) AS REVENUE,
+    SUM(F.EXPENSE_AMOUNT) AS EXPENSE,
+    SUM(F.REVENUE_AMOUNT) - SUM(F.EXPENSE_AMOUNT) AS PROFIT
+FROM FACT_FINANCIAL_TRANSACTION F
+JOIN DIM_BRANCH B
+    ON F.BRANCH_KEY = B.BRANCH_KEY
+GROUP BY
+    B.BRANCH_NAME,
+    B.CITY,
+    B.REGION
+ORDER BY PROFIT DESC;
+
+4,Transaction analysis
+SELECT
+    T.TRANSACTION_TYPE,
+    T.TRANSACTION_CATEGORY,
+    COUNT(F.TRANSACTION_KEY) AS TRANSACTION_COUNT,
+    SUM(F.TRANSACTION_AMOUNT) AS TOTAL_AMOUNT
+FROM FACT_FINANCIAL_TRANSACTION F
+JOIN DIM_TRANSACTION T
+    ON F.TRANSACTION_TYPE_KEY = T.TRANSACTION_TYPE_KEY
+GROUP BY
+    T.TRANSACTION_TYPE,
+    T.TRANSACTION_CATEGORY
+ORDER BY TOTAL_AMOUNT DESC;
+
+5,Customer segment analysis
+SELECT
+    C.CUSTOMER_SEGMENT,
+    COUNT(DISTINCT C.CUSTOMER_KEY) AS CUSTOMERS,
+    SUM(F.TRANSACTION_AMOUNT) AS TRANSACTION_VALUE,
+    SUM(F.REVENUE_AMOUNT) AS REVENUE
+FROM FACT_FINANCIAL_TRANSACTION F
+JOIN DIM_CUSTOMER C
+    ON F.CUSTOMER_KEY = C.CUSTOMER_KEY
+GROUP BY C.CUSTOMER_SEGMENT
+ORDER BY REVENUE DESC;
